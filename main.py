@@ -80,6 +80,8 @@ class ConfusionMatrix():
       self.pred = y_pred
       self.actual = y_test
       self.total = len(y_pred)
+      # Matrix disposta no sentido TN FN
+      #                            FP TP
       self.TN = self.matrix[0][0]
       self.FN = self.matrix[0][1]
       self.FP = self.matrix[1][0]
@@ -113,6 +115,7 @@ class ConfusionMatrix():
       return {'acc': self.accuracy(),'recall': self.recall(),'precision': self.precision(),'f1': self.f1_measure(),'matrix': self}
 
     @classmethod
+    #dada uma lista de matrizes de confusão, calcula os valores médios de cada posição
     def average_matrix(cls,ConfusionMatrixList):
       TN_avg = mean([matrix.TN for matrix in ConfusionMatrixList])
       FN_avg = mean([matrix.FN for matrix in ConfusionMatrixList])
@@ -286,6 +289,8 @@ for current_depth in depth_range:
   dtree_metrics['recall'].append(recall_avg)
   dtree_metrics['precision'].append(precision_avg)
   dtree_metrics['f1'].append(f1_avg)
+
+  #Devido ao grande intervalo de profundidade da árvore de decisão, não é necessário gerar uma matriz de confusão para cada valor. apenas gera-se para alguns poucos valores
   if(current_depth % 10 == 0 or current_depth == 3):
     dtree_metrics['matrix'].append(ConfusionMatrix.average_matrix(metricsList['matrix']))
     dtree_metrics['matrix_index'].append(current_depth)
@@ -296,10 +301,11 @@ for current_depth in depth_range:
   dtree_stdev['f1'].append(f1_stdev)
 
 plotting(dtree_metrics,dtree_stdev,depth_range,'dtree',K)
-print()
 knn_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix':[]}
 knn_stdev = {'acc': [],'recall': [],'precision': [],'f1': []}
 knn_sizes = [3,5,7,9,11,13]
+
+#classificador KNN
 for knn_size in knn_sizes:
   knn = KNeighborsClassifier(n_neighbors=knn_size)
   print(f"{knn_size=}")
@@ -349,7 +355,8 @@ for knn_size in knn_sizes:
 
 plotting(knn_metrics,knn_stdev,knn_sizes,'KNN',K)
 
-
+#classificador Naive Bayes
+#var smoothing é um parâmetro do classificador referente a um ajuste fino de variância
 var_smoothing_values = [ 1e-09*(i/100) for i in range(100)]
 
 nb_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': []}
