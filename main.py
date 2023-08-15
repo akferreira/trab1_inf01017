@@ -1,11 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
 import pandas as pd
 from statistics import stdev,mean
 from random import shuffle
+from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split,KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier , plot_tree
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score,ConfusionMatrixDisplay
 
 
@@ -82,7 +85,8 @@ class ConfusionMatrix():
       self.FP = self.matrix[1][0]
       self.TP = self.matrix[1][1]
       self.fmeasure_beta = 2  #para o caso de detecção de spam, julgou-se mais importante minimizar a quantidade de spam não detectado do que a taxa de emails classifcados erroneamente como spam
-
+    
+    
     def __str__(self):
       string = ""
       string += f"\n \t\t Classe verdadeira \t \n \t\t 0 \t 1"
@@ -105,47 +109,116 @@ class ConfusionMatrix():
     def metrics_text(self):
       return ( f"\n Acurácia: {self.accuracy()} \n Recall : {self.recall()}\n precisão : {self.precision()} \n f1 score : {self.f1_measure()}\n")
 
-
     def metrics(self):
-      return {'acc': self.accuracy(),'recall': self.recall(),'precision': self.precision(),'f1': self.f1_measure()}
+      return {'acc': self.accuracy(),'recall': self.recall(),'precision': self.precision(),'f1': self.f1_measure(),'matrix': self}
+
+    @classmethod
+    def average_matrix(cls,ConfusionMatrixList):
+      TN_avg = mean([matrix.TN for matrix in ConfusionMatrixList])
+      FN_avg = mean([matrix.FN for matrix in ConfusionMatrixList])
+      TP_avg = mean([matrix.TP for matrix in ConfusionMatrixList])
+      FP_avg = mean([matrix.FP for matrix in ConfusionMatrixList])
+
+      return [[TN_avg,FN_avg],[FP_avg,TP_avg]]
 
 
 
-def knn_plotting(knn_metrics,knn_stdev,knn_sizes):
-  plt.title('Métricas KNN')
-  plt.figure("Média")
-  plt.plot(knn_sizes,knn_metrics['acc'],marker='o', linestyle='--', color='r', label='Acurácia')
-  plt.plot(knn_sizes,knn_metrics['recall'],marker='o', linestyle='--', color='b', label='Recall')
-  plt.plot(knn_sizes,knn_metrics['precision'],marker='o', linestyle='--', color='g', label='Precisão')
-  plt.plot(knn_sizes,knn_metrics['f1'],marker='o', linestyle='--', color='m', label='F1 score')
-  plt.legend()
-  plt.xticks(knn_sizes,knn_sizes)
-  plt.savefig('metrics_avg.png')
+
+
+
+
+
+def plotting(metrics,stdev,sizes,classifier_type,fold_count = 5):
+  xlabelsize = 10
+  ylabelsize = 15
+  xlabel = ""
+
+  if(classifier_type.upper() == 'KNN'):
+    xlabel = 'Valor de K'
+    xlabelsize = 18
+
+
+  elif (classifier_type.upper() == 'DTREE'):
+    xlabel = 'Profundidade'
+    xlabelsize = 8
+
+  else:
+    xlabel = 'Var smoothing. % de 1E-09'
+    xlabelsize = 8
 
   
-  plt.figure("Acurácia Desvio padrão")
-  plt.xticks(knn_sizes,knn_sizes)
-  plt.errorbar(knn_sizes,knn_metrics['acc'],yerr = knn_stdev['acc'],marker='o', linestyle='--', color='r', label='Acurácia')
+  plt.figure(f"{classifier_type} Média")
+  plt.xlabel(xlabel)
+  plt.title(f"Métricas {classifier_type} | Média")
+  plt.plot(sizes,metrics['acc'],marker='o', linestyle='--', color='r', label='Acurácia')
+  plt.plot(sizes,metrics['recall'],marker='o', linestyle='--', color='b', label='Recall')
+  plt.plot(sizes,metrics['precision'],marker='o', linestyle='--', color='g', label='Precisão')
+  plt.plot(sizes,metrics['f1'],marker='o', linestyle='--', color='m', label='F1 score')
   plt.legend()
-  plt.savefig('metrics1_stdev.png')
+  plt.grid()
+  plt.xticks( [size for size in sizes if ((len(sizes) < 10 or size % 5 == 0 )) ]) 
+  plt.tick_params(axis='x', which='major', labelsize=xlabelsize)
+  plt.tick_params(axis='y', which='major', labelsize=ylabelsize)
+  plt.savefig(f'{classifier_type}_metrics_avg.png')
 
-  plt.figure("Recall Desvio padrão")
-  plt.xticks(knn_sizes,knn_sizes)
-  plt.errorbar(knn_sizes,knn_metrics['recall'],yerr = knn_stdev['recall'],marker='o', linestyle='--', color='b', label='Recall')
-  plt.legend()
-  plt.savefig('metrics2_stdev.png')
 
-  plt.figure("Precisão Desvio padrão")
-  plt.xticks(knn_sizes,knn_sizes)
-  plt.errorbar(knn_sizes,knn_metrics['precision'],yerr = knn_stdev['precision'],marker='o', linestyle='--', color='g', label='Precisão')
-  plt.legend()
-  plt.savefig('metrics3_stdev.png')
+  for matrix,index in zip(metrics['matrix'],metrics['matrix_index']):
+    fig, ax = plt.subplots()
+    ax.matshow(matrix,cmap=plt.cm.Blues)
+    plt.title(f'{xlabel} {index=}')
+    plt.xlabel('Predito')
+    plt.ylabel('Real')
+    ax.text(0, 0, f"TN = {round(matrix[0][0])}", va='center', ha='center',size = 20)
+    ax.text(0, 1, f"FN = {round(matrix[0][1])}", va='center', ha='center',size = 20)
+    ax.text(1, 0, f"FP = {round(matrix[1][0])}", va='center', ha='center',size = 20)
+    ax.text(1, 1, f"TP = {round(matrix[1][1])}", va='center', ha='center',size = 20)
+    plt.savefig(f'{classifier_type}_{index}_confusion_matrix.png')
 
-  plt.figure("f1 Desvio padrão")
-  plt.xticks(knn_sizes,knn_sizes)
-  plt.errorbar(knn_sizes,knn_metrics['f1'],yerr = knn_stdev['f1'],marker='o', linestyle='--', color='m', label='F1 score')
+
+  
+  plt.figure(f"{classifier_type} Acurácia Desvio padrão")
+  plt.xlabel(xlabel)
+  plt.title(f'{classifier_type} | Acurácia c/ Desvio padrão')
+  plt.xticks( [size for size in sizes if ((len(sizes) < 10 or size % 5 == 0 )) ]) 
+  plt.tick_params(axis='x', which='major', labelsize=xlabelsize)
+  plt.tick_params(axis='y', which='major', labelsize=ylabelsize)
+  plt.errorbar(sizes,metrics['acc'],yerr = stdev['acc'],marker='o', linestyle='--', color='r', label='Acurácia')
   plt.legend()
-  plt.savefig('metrics4_stdev.png')
+  plt.grid()
+  plt.savefig(f'{classifier_type}_metrics1_stdev.png')
+
+  plt.figure(f"{classifier_type} Recall Desvio padrão")
+  plt.xlabel(xlabel)
+  plt.title(f'{classifier_type} | Recall c/ Desvio padrão')
+  plt.xticks( [size for size in sizes if ((len(sizes) < 10 or size % 5 == 0 )) ]) 
+  plt.tick_params(axis='x', which='major', labelsize=xlabelsize)
+  plt.tick_params(axis='y', which='major', labelsize=ylabelsize)
+  plt.errorbar(sizes,metrics['recall'],yerr = stdev['recall'],marker='o', linestyle='--', color='b', label='Recall')
+  plt.legend()
+  plt.grid()
+  plt.savefig(f'{classifier_type}_metrics2_stdev.png')
+
+  plt.figure(f"{classifier_type} Precisão Desvio padrão")
+  plt.xlabel(xlabel)
+  plt.title(f'{classifier_type} | Precisão c/ Desvio padrão')
+  plt.xticks( [size for size in sizes if ((len(sizes) < 10 or size % 5 == 0 )) ]) 
+  plt.tick_params(axis='x', which='major', labelsize=xlabelsize)
+  plt.tick_params(axis='y', which='major', labelsize=ylabelsize)
+  plt.errorbar(sizes,metrics['precision'],yerr = stdev['precision'],marker='o', linestyle='--', color='g', label='Precisão')
+  plt.legend()
+  plt.grid()
+  plt.savefig(f'{classifier_type}_metrics3_stdev.png')
+
+  plt.figure(f"{classifier_type} f1 Desvio padrão")
+  plt.xlabel(xlabel)
+  plt.title(f'{classifier_type} | F1_Score c/ Desvio padrão')
+  plt.xticks( [size for size in sizes if ((len(sizes) < 10 or size % 5 == 0 )) ]) 
+  plt.tick_params(axis='x', which='major', labelsize=xlabelsize)
+  plt.tick_params(axis='y', which='major', labelsize=ylabelsize)
+  plt.errorbar(sizes,metrics['f1'],yerr = stdev['f1'],marker='o', linestyle='--', color='m', label='F1 score')
+  plt.legend()
+  plt.grid()
+  plt.savefig(f'{classifier_type}_metrics4_stdev.png')
 
   
   
@@ -166,7 +239,8 @@ df = pd.read_csv(url, names=names)
 total_instances = len(df)
 spam_count = df['spam'].value_counts()[1]
 notspam_count = df['spam'].value_counts()[1]
-
+rcParams['savefig.dpi'] = 900
+rcParams["figure.dpi"] = 300
 
 X = df.drop('spam', axis=1)
 y = df['spam']
@@ -175,7 +249,55 @@ K = 5
 folds = generate_folds(K,df,spam_count,notspam_count,total_instances)
 train_test_sets = combine_folds_training_testing(folds)
 
-knn_metrics = {'acc': [],'recall': [],'precision': [],'f1': []}
+dtree_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': [],'matrix_index':[]}
+
+dtree_stdev = {'acc': [],'recall': [],'precision': [],'f1': []}
+depth_range = [depth for depth in range(len(names)) if depth > 2]
+
+
+for current_depth in depth_range: 
+  metricsList = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': []}
+
+  for train_test_set in train_test_sets:
+    dtree = DecisionTreeClassifier(random_state=0,max_depth = current_depth)
+    dtree.fit(train_test_set['X_train'], train_test_set['y_train'])
+    y_pred = dtree.predict(train_test_set['X_test'])
+    cm = ConfusionMatrix(train_test_set['y_test'], y_pred)
+    cm_metrics = cm.metrics()
+
+    metricsList['acc'].append(cm_metrics['acc'])
+    metricsList['recall'].append(cm_metrics['recall'])
+    metricsList['precision'].append(cm_metrics['precision'])
+    metricsList['f1'].append(cm_metrics['f1'])
+    metricsList['matrix'].append(cm_metrics['matrix'])
+
+
+  acc_avg = mean(metricsList['acc'])
+  recall_avg = mean(metricsList['recall'])
+  precision_avg = mean(metricsList['precision'])
+  f1_avg = mean(metricsList['f1'])
+
+  acc_stdev = stdev(metricsList['acc'])
+  recall_stdev = stdev(metricsList['recall'])
+  precision_stdev = stdev(metricsList['precision'])
+  f1_stdev = stdev(metricsList['f1'])
+
+  dtree_metrics['acc'].append(acc_avg)
+  dtree_metrics['recall'].append(recall_avg)
+  dtree_metrics['precision'].append(precision_avg)
+  dtree_metrics['f1'].append(f1_avg)
+  if(current_depth % 10 == 0 or current_depth == 3):
+    dtree_metrics['matrix'].append(ConfusionMatrix.average_matrix(metricsList['matrix']))
+    dtree_metrics['matrix_index'].append(current_depth)
+
+  dtree_stdev['acc'].append(acc_stdev)
+  dtree_stdev['recall'].append(recall_stdev)
+  dtree_stdev['precision'].append(precision_stdev)
+  dtree_stdev['f1'].append(f1_stdev)
+
+plotting(dtree_metrics,dtree_stdev,depth_range,'dtree',K)
+print()
+knn_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix':[]}
 knn_stdev = {'acc': [],'recall': [],'precision': [],'f1': []}
 knn_sizes = [3,5,7,9,11,13]
 for knn_size in knn_sizes:
@@ -196,6 +318,7 @@ for knn_size in knn_sizes:
     metricsList['recall'].append(cm_metrics['recall'])
     metricsList['precision'].append(cm_metrics['precision'])
     metricsList['f1'].append(cm_metrics['f1'])
+    metricsList['matrix'].append(cm_metrics['matrix'])
 
   acc_avg = mean(metricsList['acc'])
   recall_avg = mean(metricsList['recall'])
@@ -211,20 +334,65 @@ for knn_size in knn_sizes:
   knn_metrics['recall'].append(recall_avg)
   knn_metrics['precision'].append(precision_avg)
   knn_metrics['f1'].append(f1_avg)
+  knn_metrics['matrix'].append(ConfusionMatrix.average_matrix(metricsList['matrix']))
+  knn_metrics['matrix_index'] = knn_sizes
 
   knn_stdev['acc'].append(acc_stdev)
   knn_stdev['recall'].append(recall_stdev)
   knn_stdev['precision'].append(precision_stdev)
   knn_stdev['f1'].append(f1_stdev)
 
-
   print(f"Acurácia: {acc_avg:.4}, desvio padrão: {acc_stdev:.4}")
   print(f"Recall: {recall_avg:.4}, desvio padrão: {recall_stdev:.4}")
   print(f"Precisão: {precision_avg:.4}, desvio padrão: {precision_stdev:.4}")
   print(f"F1 score: {f1_avg:.4}, desvio padrão: {f1_stdev:.4}\n")
 
-knn_plotting(knn_metrics,knn_stdev,knn_sizes)
+plotting(knn_metrics,knn_stdev,knn_sizes,'KNN',K)
+
+
+var_smoothing_values = [ 1e-09*(i/100) for i in range(100)]
+
+nb_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': []}
+nb_stdev = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': []}
+
+for var_smoothing_current in var_smoothing_values:
+  NB = GaussianNB(var_smoothing = var_smoothing_current)
+
+  for train_test_set in train_test_sets:
+    NB.fit(train_test_set['X_train'], train_test_set['y_train'])
+    y_pred = knn.predict(train_test_set['X_test'])
+
+    cm = ConfusionMatrix(train_test_set['y_test'], y_pred)
+    cm_metrics = cm.metrics()
+
+    metricsList['acc'].append(cm_metrics['acc'])
+    metricsList['recall'].append(cm_metrics['recall'])
+    metricsList['precision'].append(cm_metrics['precision'])
+    metricsList['f1'].append(cm_metrics['f1'])
+    metricsList['matrix'].append(cm_metrics['matrix'])
 
 
 
-    
+  acc_avg = mean(metricsList['acc'])
+  recall_avg = mean(metricsList['recall'])
+  precision_avg = mean(metricsList['precision'])
+  f1_avg = mean(metricsList['f1'])
+
+  acc_stdev = stdev(metricsList['acc'])
+  recall_stdev = stdev(metricsList['recall'])
+  precision_stdev = stdev(metricsList['precision'])
+  f1_stdev = stdev(metricsList['f1'])
+
+  nb_metrics['acc'].append(acc_avg)
+  nb_metrics['recall'].append(recall_avg)
+  nb_metrics['precision'].append(precision_avg)
+  nb_metrics['f1'].append(f1_avg)
+  nb_metrics['matrix'] = [ConfusionMatrix.average_matrix(metricsList['matrix'])]
+  nb_metrics['matrix_index'] = ''
+
+  nb_stdev['acc'].append(acc_stdev)
+  nb_stdev['recall'].append(recall_stdev)
+  nb_stdev['precision'].append(precision_stdev)
+  nb_stdev['f1'].append(f1_stdev)
+
+plotting(nb_metrics,nb_stdev,[i for i in range(100)],'NB',K)
