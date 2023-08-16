@@ -27,8 +27,12 @@ train_test_sets = combine_folds_training_testing(folds)
 # KNN
 knn(train_test_sets)
 
+print("\n\n")
+
 # Decision Tree
 decision_tree(train_test_sets)
+
+print("\n\n")
 
 # Naive_bayes
 #naive_bayes(train_test_sets)
