@@ -69,7 +69,6 @@ def combine_folds_training_testing(folds):
 
   return train_test_sets
 
-
 class ConfusionMatrix():
     def __init__(self,y_test,y_pred):
       self.matrix = [[0,0],[0,0]]
@@ -80,8 +79,6 @@ class ConfusionMatrix():
       self.pred = y_pred
       self.actual = y_test
       self.total = len(y_pred)
-      # Matrix disposta no sentido TN FN
-      #                            FP TP
       self.TN = self.matrix[0][0]
       self.FN = self.matrix[0][1]
       self.FP = self.matrix[1][0]
@@ -115,7 +112,6 @@ class ConfusionMatrix():
       return {'acc': self.accuracy(),'recall': self.recall(),'precision': self.precision(),'f1': self.f1_measure(),'matrix': self}
 
     @classmethod
-    #dada uma lista de matrizes de confusão, calcula os valores médios de cada posição
     def average_matrix(cls,ConfusionMatrixList):
       TN_avg = mean([matrix.TN for matrix in ConfusionMatrixList])
       FN_avg = mean([matrix.FN for matrix in ConfusionMatrixList])
@@ -123,13 +119,6 @@ class ConfusionMatrix():
       FP_avg = mean([matrix.FP for matrix in ConfusionMatrixList])
 
       return [[TN_avg,FN_avg],[FP_avg,TP_avg]]
-
-
-
-
-
-
-
 
 def plotting(metrics,stdev,sizes,classifier_type,fold_count = 5):
   xlabelsize = 10
@@ -223,14 +212,6 @@ def plotting(metrics,stdev,sizes,classifier_type,fold_count = 5):
   plt.grid()
   plt.savefig(f'{classifier_type}_metrics4_stdev.png')
 
-  
-  
-  
-  
-
-
-
-
 names = ["word_freq_make" ,"word_freq_address","word_freq_all"          ,"word_freq_3d"           ,"word_freq_our"          ,"word_freq_over"         ,"word_freq_remove"       ,"word_freq_internet"     ,"word_freq_order"        ,"word_freq_mail"         ,"word_freq_receive"      ,"word_freq_will"         ,"word_freq_people"       ,"word_freq_report"       ,"word_freq_addresses"    ,"word_freq_free"         ,"word_freq_business"     ,"word_freq_email"        ,"word_freq_you"          ,"word_freq_credit"       ,"word_freq_your"         ,"word_freq_font"         ,"word_freq_000"          ,"word_freq_money"        ,"word_freq_hp"           ,"word_freq_hpl"          ,"word_freq_george"       ,"word_freq_650"          ,"word_freq_lab"          ,"word_freq_labs"         ,"word_freq_telnet"       ,"word_freq_857"          ,"word_freq_data"         ,"word_freq_415"          ,"word_freq_85"           ,"word_freq_technology"   ,"word_freq_1999"         ,"word_freq_parts"        ,"word_freq_pm"           ,"word_freq_direct"       ,"word_freq_cs"           ,"word_freq_meeting"      ,"word_freq_original"     ,"word_freq_project" ,"word_freq_re"  ,"word_freq_edu" ,"word_freq_table"   ,"word_freq_conference"   ,"char_freq_;" ,"char_freq_("  ,"char_freq_[" ,"char_freq_!"
            ,"char_freq_$" ,"char_freq_#" ,"capital_run_length_average" ,"capital_run_length_longest" ,"capital_run_length_total"   ,'spam']
 
@@ -248,11 +229,13 @@ rcParams["figure.dpi"] = 300
 X = df.drop('spam', axis=1)
 y = df['spam']
 
+# K-folds
 K = 5
 folds = generate_folds(K,df,spam_count,notspam_count,total_instances)
 train_test_sets = combine_folds_training_testing(folds)
 
-dtree_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': [],'matrix_index':[]}
+# Arvore de decisao
+""" dtree_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': [],'matrix_index':[]}
 
 dtree_stdev = {'acc': [],'recall': [],'precision': [],'f1': []}
 depth_range = [depth for depth in range(len(names)) if depth > 2]
@@ -289,8 +272,6 @@ for current_depth in depth_range:
   dtree_metrics['recall'].append(recall_avg)
   dtree_metrics['precision'].append(precision_avg)
   dtree_metrics['f1'].append(f1_avg)
-
-  #Devido ao grande intervalo de profundidade da árvore de decisão, não é necessário gerar uma matriz de confusão para cada valor. apenas gera-se para alguns poucos valores
   if(current_depth % 10 == 0 or current_depth == 3):
     dtree_metrics['matrix'].append(ConfusionMatrix.average_matrix(metricsList['matrix']))
     dtree_metrics['matrix_index'].append(current_depth)
@@ -300,12 +281,12 @@ for current_depth in depth_range:
   dtree_stdev['precision'].append(precision_stdev)
   dtree_stdev['f1'].append(f1_stdev)
 
-plotting(dtree_metrics,dtree_stdev,depth_range,'dtree',K)
+plotting(dtree_metrics,dtree_stdev,depth_range,'dtree', K) """
+
+# KNN
 knn_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix':[]}
 knn_stdev = {'acc': [],'recall': [],'precision': [],'f1': []}
 knn_sizes = [3,5,7,9,11,13]
-
-#classificador KNN
 for knn_size in knn_sizes:
   knn = KNeighborsClassifier(n_neighbors=knn_size)
   print(f"{knn_size=}")
@@ -354,6 +335,10 @@ for knn_size in knn_sizes:
   print(f"F1 score: {f1_avg:.4}, desvio padrão: {f1_stdev:.4}\n")
 
 plotting(knn_metrics,knn_stdev,knn_sizes,'KNN',K)
+
+print(knn_size)
+print("\n")
+print(knn)
 
 #classificador Naive Bayes
 #var smoothing é um parâmetro do classificador referente a um ajuste fino de variância
