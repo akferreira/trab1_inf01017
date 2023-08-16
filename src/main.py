@@ -16,18 +16,8 @@ def remove_and_create_plot_directory():
 # Inicialmente limpa a pasta que ficara os plots
 remove_and_create_plot_directory()
 
-
-tempo_inicio = time.time()
 #Obtem os dados 
 df = get_data()
-
-# Registrar o tempo de término
-tempo_fim = time.time()
-
-# Calcular o tempo total de execução
-tempo_total = tempo_fim - tempo_inicio
-
-print(f"Tempo de execução: {tempo_total:.4f} segundos")
 
 # Geração do K-folds
 K = 5
