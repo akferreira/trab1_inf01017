@@ -7,8 +7,7 @@ from utils import plotting, ConfusionMatrix
 
 
 def naive_bayes(train_test_sets):
-  knn = KNeighborsClassifier(n_neighbors=13)
-  
+  print("=============== Inicio da Execução do Algoritmo Naive Bayes ===============")
   var_smoothing_values = [ 1e-09*(i/100) for i in range(100)]
 
   nb_metrics = {'acc': [],'recall': [],'precision': [],'f1': [],'matrix': []}
@@ -20,7 +19,7 @@ def naive_bayes(train_test_sets):
 
     for train_test_set in train_test_sets:
       NB.fit(train_test_set['X_train'], train_test_set['y_train'])
-      y_pred = knn.predict(train_test_set['X_test'])
+      y_pred = NB.predict(train_test_set['X_test'])
 
       cm = ConfusionMatrix(train_test_set['y_test'], y_pred)
       cm_metrics = cm.metrics()
@@ -30,8 +29,6 @@ def naive_bayes(train_test_sets):
       metricsList['precision'].append(cm_metrics['precision'])
       metricsList['f1'].append(cm_metrics['f1'])
       metricsList['matrix'].append(cm_metrics['matrix'])
-
-
 
     acc_avg = mean(metricsList['acc'])
     recall_avg = mean(metricsList['recall'])
@@ -56,3 +53,4 @@ def naive_bayes(train_test_sets):
     nb_stdev['f1'].append(f1_stdev)
 
   plotting(nb_metrics,nb_stdev,[i for i in range(100)],'NB')
+  print("=============== Fim da Execução do Algoritmo Naive Bayes ===============")

@@ -35,7 +35,7 @@ decision_tree(train_test_sets)
 print("\n\n")
 
 # Naive_bayes
-#naive_bayes(train_test_sets)
+naive_bayes(train_test_sets)
 
 
 

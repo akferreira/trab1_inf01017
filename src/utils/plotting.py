@@ -52,6 +52,7 @@ def plotting(metrics,stdev,sizes,classifier_type):
   plt.tick_params(axis='x', which='major', labelsize=xlabelsize)
   plt.tick_params(axis='y', which='major', labelsize=ylabelsize)
   plt.savefig(f'{path_plot}_metrics_avg.png')
+  plt.close(f"{classifier_type} Média")
 
   for matrix,index in zip(metrics['matrix'],metrics['matrix_index']):
     fig, ax = plt.subplots()
@@ -64,6 +65,7 @@ def plotting(metrics,stdev,sizes,classifier_type):
     ax.text(1, 0, f"FP = {round(matrix[1][0])}", va='center', ha='center',size = 20)
     ax.text(1, 1, f"TP = {round(matrix[1][1])}", va='center', ha='center',size = 20)
     plt.savefig(f'{path_plot}_{index}_confusion_matrix.png')
+    plt.close(f'{xlabel} {index=}')
 
   plt.figure(f"{classifier_type} Acurácia Desvio padrão")
   plt.xlabel(xlabel)
@@ -75,6 +77,7 @@ def plotting(metrics,stdev,sizes,classifier_type):
   plt.legend()
   plt.grid()
   plt.savefig(f'{path_plot}_metrics1_stdev.png')
+  plt.close(f"{classifier_type} Acurácia Desvio padrão")
 
   plt.figure(f"{classifier_type} Recall Desvio padrão")
   plt.xlabel(xlabel)
@@ -86,7 +89,8 @@ def plotting(metrics,stdev,sizes,classifier_type):
   plt.legend()
   plt.grid()
   plt.savefig(f'{path_plot}_metrics2_stdev.png')
-
+  plt.close(f"{classifier_type} Recall Desvio padrão")
+  
   plt.figure(f"{classifier_type} Precisão Desvio padrão")
   plt.xlabel(xlabel)
   plt.title(f'{classifier_type} | Precisão c/ Desvio padrão')
@@ -97,6 +101,7 @@ def plotting(metrics,stdev,sizes,classifier_type):
   plt.legend()
   plt.grid()
   plt.savefig(f'{path_plot}_metrics3_stdev.png')
+  plt.close(f"{classifier_type} Precisão Desvio padrão")
 
   plt.figure(f"{classifier_type} f1 Desvio padrão")
   plt.xlabel(xlabel)
@@ -108,3 +113,4 @@ def plotting(metrics,stdev,sizes,classifier_type):
   plt.legend()
   plt.grid()
   plt.savefig(f'{path_plot}_metrics4_stdev.png')
+  plt.close(f"{classifier_type} f1 Desvio padrão")
